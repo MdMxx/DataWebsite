@@ -1,8 +1,9 @@
+requirements.txt
 import streamlit as st
 import yfinance as yf
-import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 
 # Page setup
@@ -118,45 +119,6 @@ if st.sidebar.button("Analyse starten", type="primary"):
         else:
             cols[3].metric("Letzte Empfehlung", "Nicht verfügbar")
 
-        # Earnings Analyse
-        st.subheader("💰 Earnings Analyse")
-
-        if earnings is not None and not earnings.empty:
-            # Aktuelle Schätzungen
-            if 'earningsQuarterlyGrowth' in info:
-                growth = info['earningsQuarterlyGrowth']
-                st.metric("Erwartetes Quartalswachstum (YoY)",
-                          f"{growth * 100:.2f}%" if growth else "N/A")
-
-            # Vorherige Earnings vs. Schätzungen
-            if quarterly_earnings is not None and not quarterly_earnings.empty:
-                latest_quarter = quarterly_earnings.iloc[0]
-                if 'Revenue' in latest_quarter and 'Earnings' in latest_quarter:
-                    cols = st.columns(2)
-
-                    # Revenue Analyse
-                    if 'revenueEstimate' in info:
-                        revenue_diff = latest_quarter['Revenue'] - info['revenueEstimate']
-                        cols[0].metric("Umsatz (letztes Quartal)",
-                                       f"${latest_quarter['Revenue'] / 1e9:.2f} Mrd.",
-                                       f"{'Überboten' if revenue_diff > 0 else 'Unterboten'} um ${abs(revenue_diff) / 1e6:.2f} Mio.")
-
-                    # Earnings Analyse
-                    if 'earningsEstimate' in info:
-                        earnings_diff = latest_quarter['Earnings'] - info['earningsEstimate']
-                        cols[1].metric("Gewinn (letztes Quartal)",
-                                       f"${latest_quarter['Earnings']:.2f} pro Aktie",
-                                       f"{'Überboten' if earnings_diff > 0 else 'Unterboten'} um ${abs(earnings_diff):.2f}")
-
-            # Earnings Chart
-            st.markdown("### Historische Earnings")
-            if 'Earnings' in earnings:
-                fig_earn, ax_earn = plt.subplots(figsize=(12, 4))
-                earnings['Earnings'].plot(kind='bar', ax=ax_earn, color='green')
-                ax_earn.set_title('Jährliche Earnings')
-                ax_earn.set_ylabel('Gewinn pro Aktie ($)')
-                st.pyplot(fig_earn)
-
         # Bilanzkennzahlen
         st.subheader("🏦 Bilanzkennzahlen")
         cols = st.columns(4)
@@ -236,11 +198,22 @@ if st.sidebar.button("Analyse starten", type="primary"):
             cols[2].metric("Aktuelles Volumen",
                            f"{info['volume'] / 1e6:.1f} Mio.")
 
-        # Kursverlauf Chart
+        # Kursverlauf Chart mit Moving Averages
         st.subheader(f"📈 Kursverlauf: {ticker}")
         fig, ax = plt.subplots(figsize=(12, 6))
-        ax.plot(hist_data.index, hist_data['Close'], label='Schlusskurs', color='blue')
-        ax.set_title(f'Kursverlauf der letzten 5 Jahre', fontsize=16)
+
+        # Berechne die gleitenden Durchschnitte
+        hist_data['MA20'] = hist_data['Close'].rolling(window=20).mean()
+        hist_data['MA50'] = hist_data['Close'].rolling(window=50).mean()
+        hist_data['MA200'] = hist_data['Close'].rolling(window=200).mean()
+
+        # Plot der Kurse und Durchschnitte
+        ax.plot(hist_data.index, hist_data['Close'], label='Schlusskurs', color='blue', alpha=0.5)
+        ax.plot(hist_data.index, hist_data['MA20'], label='20-Tage-Durchschnitt', color='orange', linewidth=1)
+        ax.plot(hist_data.index, hist_data['MA50'], label='50-Tage-Durchschnitt', color='green', linewidth=1)
+        ax.plot(hist_data.index, hist_data['MA200'], label='200-Tage-Durchschnitt', color='red', linewidth=1)
+
+        ax.set_title(f'Kursverlauf der letzten 5 Jahre mit gleitenden Durchschnitten', fontsize=16)
         ax.set_xlabel('Datum', fontsize=12)
         ax.set_ylabel('Preis ($)', fontsize=12)
         ax.grid(True, linestyle='--', alpha=0.7)
