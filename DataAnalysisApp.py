@@ -1,6 +1,12 @@
+"""
+requirements.txt:
+streamlit==1.44.1
+pandas==2.2.3
 numpy==2.2.4
 yfinance==0.2.37
 matplotlib==3.8.4
+"""
+
 import streamlit as st
 import yfinance as yf
 import pandas as pd
