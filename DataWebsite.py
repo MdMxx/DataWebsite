@@ -3,6 +3,9 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
+import matplotlib.pyplot as plt  
+
+# Rest of your code remains the same...
 
 # Page setup
 st.set_page_config(page_title="Aktien Analyse Tool", layout="wide")
